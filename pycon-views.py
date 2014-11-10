@@ -20,6 +20,12 @@ def get_video_data(video_page_url):
     soup = bs4.BeautifulSoup(response.text)
     video_data['title'] = soup.select('div#videobox h3')[0].get_text()
     video_data['speakers'] = [a.get_text() for a in soup.select('div#sidebar a[href^=/speaker]')]
+
+    # initialize counters
+    video_data['views'] = 0
+    video_data['likes'] = 0
+    video_data['dislikes'] = 0
+
     try:
         video_data['youtube_url'] = soup.select('div#sidebar a[href^=http://www.youtube.com]')[0].get_text()
         response = requests.get(video_data['youtube_url'], headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1700.77 Safari/537.36'})
@@ -27,14 +33,12 @@ def get_video_data(video_page_url):
         video_data['views'] = int(re.sub('[^0-9]', '',
                                          soup.select('.watch-view-count')[0].get_text().split()[0]))
         video_data['likes'] = int(re.sub('[^0-9]', '',
-                                         soup.select('.likes-count')[0].get_text().split()[0]))
+                                         soup.select('#watch-like-dislike-buttons span.yt-uix-button-content')[0].get_text().split()[0]))
         video_data['dislikes'] = int(re.sub('[^0-9]', '',
-                                            soup.select('.dislikes-count')[0].get_text().split()[0]))
+                                            soup.select('#watch-like-dislike-buttons span.yt-uix-button-content')[2].get_text().split()[0]))
     except:
-        # video does not have a youtube URL
-        video_data['views'] = 0
-        video_data['likes'] = 0
-        video_data['dislikes'] = 0
+        # some or all of the counters could not be scraped
+        pass
     return video_data
 
 
@@ -49,7 +53,6 @@ def parse_args():
     parser.add_argument('--workers', type=int, default=8,
                         help='number of workers to use, 8 by default.')
     return parser.parse_args()
-
 
 def show_video_stats(options):
     #video_page_urls = get_video_page_urls()
@@ -76,7 +79,6 @@ def show_video_stats(options):
             print(u'{0:5d} {1:3d} {2:3d} {3} ({4})'.format(
                 results[i]['views'], results[i]['likes'], results[i]['dislikes'], results[i]['title'],
                 ', '.join(results[i]['speakers'])))
-
 
 if __name__ == '__main__':
     show_video_stats(parse_args())
